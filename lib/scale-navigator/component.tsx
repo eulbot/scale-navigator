@@ -1,6 +1,5 @@
 import * as React from 'react';
 import { RulerSegment } from '../ruler-segment/component';
-import Util from './util';
 
 interface IProps {
     map?: any
@@ -9,7 +8,7 @@ interface IProps {
 interface IState {
     factor: number;
     offset: number;
-    segments: Array<number>;
+    segments: Array<{ position: number; value: number }>;
     segmentWidth: number;
 }
 
@@ -44,30 +43,38 @@ export class ScaleNavigator extends React.Component<IProps, IState> {
 
     initSegments = () => {
 
-        let from = 0;
-        let to = 10;
-
-        if(!this.target.current)
+        if (!this.target.current)
             return;
 
-        let segmentation = Util.initSegmentation(this.target.current.clientWidth);
-        
-        let segments = Util.getSegments(from, to, 1)
+        let from = 30;
+        let to = 875;
 
-        
+        let range = to - from;
+        let width = this.target.current.clientWidth;
+        let factor = width / range;
+
+        let power = Math.pow(10, Math.floor(Math.log10(range)));
+        let segments = [];
+        let offset = from % power;
+
+        for (let i = from - offset; i < to + power; i += power) {
+
+            segments.push({ value: i, position: (i - offset) * factor });
+        }
+
         this.setState({
-            segments: segments,
-            segmentWidth: segmentation.width
+            segments: segments
         });
     }
 
     render() {
-        
+
         return (
-            <div className="scale-navigator-container" onWheel={ (e) => this.scroll(e) } ref={ this.target }>
-                { this.state.segments.map((segment, index) => (
-                    <RulerSegment key={ index } value={ segment } width={ this.state.segmentWidth } />
-                )) }
+            <div className="scale-navigator-container" onWheel={(e) => this.scroll(e)} ref={this.target}>
+                {this.state.segments.map((segment, index) => (
+
+                    <RulerSegment key={index} value={segment.value} position={segment.position} />
+                ))}
             </div>
         )
     }

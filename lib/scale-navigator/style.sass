@@ -5,14 +5,18 @@
     width: 800px
     height: 200px
     background-color: #EEE
-    overflow: overlay
+    position: relative
+    margin: 0 auto
 
     .segment
-        position: relative
-        height: 100px;
-        float: left
+        position: absolute
+        height: 10px;
+        border-left: 1px solid;
 
         .caption
-            position: absolute
             font-family: sans-serif
+            font-size: 11px
+            position: relative;
+            left: calc(-50% - .5px);
+            top: 10px;
         

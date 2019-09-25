@@ -1,11 +1,11 @@
 import * as React from 'react';
 
 interface IProps {
+    position: number;
     value: number;
-    width: number;
 }
 
-interface IState {}
+interface IState { }
 
 export class RulerSegment extends React.Component<IProps, IState> {
 
@@ -14,10 +14,10 @@ export class RulerSegment extends React.Component<IProps, IState> {
     }
 
     render() {
-        
+
         return (
-            <div className="segment" style={ {width: `${this.props.width}px` } } >
-                <div className="caption">{ Math.round(this.props.value) }</div>
+            <div className="segment" style={{ left: `${this.props.position}px` }} >
+                <div className="caption">{Math.round(this.props.value * 100) / 100}</div>
             </div>
         )
     }

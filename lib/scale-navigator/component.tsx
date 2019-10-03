@@ -1,97 +1,100 @@
 import * as React from 'react';
-import { RulerSegment } from '../ruler-segment/component';
+import RulerRenderer from './ruler-renderer';
 
 interface IProps {
     map?: any
 }
 
 interface IExtent {
-    from: number; 
-    to: number; 
+    from: number;
+    to: number;
     range: number;
 }
 
-interface ISegment {
+export enum Ruler {
+    Full,
+    Half,
+    Tenth
+}
+
+export interface ISegment {
     position: number;
-    value: number;
+    type: Ruler;
 }
 
 interface IState {
     factor: number;
     extent: IExtent;
-    segments: Map<number, number>;
+    segments: Map<number, ISegment>;
 }
 
-export class ScaleNavigator extends React.Component<IProps, IState> {
+export class ScaleNavigator {
 
-    private target: React.RefObject<HTMLDivElement>;
+    private state: IState;
+    private renderer: RulerRenderer;
 
-    constructor(props: IProps) {
-        super(props);
+    constructor(private target: HTMLElement, private map?: any) {
 
         this.state = {
             factor: 1,
-            extent: { from: -100, to: 100, get range() { return this.to - this. from } },
+            extent: { from: -110, to: 110, get range() { return this.to - this.from } },
             segments: new Map()
         }
 
-        this.target = React.createRef<HTMLDivElement>();
+        this.renderer = new RulerRenderer(this.target);
+
         this.initSegments();
+
+        window.addEventListener('keydown', (ev) => {
+            if (ev.keyCode == 187)
+                (this.scroll as any)({ deltaY: 1 });
+            else if (ev.keyCode == 189)
+                (this.scroll as any)({ deltaY: -1 });
+        });
+
+        target.addEventListener('wheel', this.scroll)
     }
 
-    scroll = (e: React.WheelEvent<HTMLDivElement>) => {
+
+    scroll = (e: WheelEvent) => {
 
         let extent = this.state.extent;
-        extent.to += e.deltaY / 10;
-        extent.from -= e.deltaY / 10;
-
-        this.setState({
-            extent: extent
-        });
-        
-        this.initSegments();
-    }
-
-    componentDidMount() {
+        let section = extent.range / 100 * Math.sign(e.deltaY);
+        extent.from -= section;
+        extent.to += section;
         this.initSegments();
     }
 
     initSegments = () => {
 
-        if (!this.target.current)
-            return;
-
         let extent = this.state.extent;
-        let width = this.target.current.clientWidth;
+        let width = this.target.clientWidth;
         this.ruler(this.state.segments, extent, width);
+        this.renderer.drawRuler(this.state.segments);
     }
 
-    ruler = (segments: Map<number, number>, extent: IExtent, width: number) => {
+    ruler = (segments: Map<number, ISegment>, extent: IExtent, width: number) => {
 
         let usedKeys = [];
-        let slope = (x: number) => x * (width / extent.range) + (width / 2);
-        let power = Math.pow(10, Math.floor(Math.log10(extent.range)));
-        let offset = extent.from % power + power;
+        let slope = (x: number) => (x - extent.from) * (width / extent.range);
 
-        for (let i = extent.from - offset; i < extent.to + power; i += power) {
-            segments.set(i, slope(i));
+        let adf = (power: number, value: number): Ruler => {
+            if (value % power === 0)
+                return Ruler.Full;
+            else if (value % (power / 2) == 0)
+                return Ruler.Half;
+
+            return Ruler.Tenth;
+        }
+        let power = Math.pow(10, Math.floor(Math.log10(extent.range)));
+        let offset = extent.from % power;
+
+        for (let i = extent.from - offset; i < extent.to - offset + power; i += (power / 10)) {
+            segments.set(i, { position: slope(i), type: adf(power, i) });
             usedKeys.push(i);
         }
 
         // Drop unused entries
         [...segments.keys()].filter(s => !usedKeys.includes(s)).map(d => segments.delete(d));
-    }
-
-    render() {
-
-        return (
-            <div className="scale-navigator-container" onWheel={(e) => this.scroll(e)} ref={this.target}>
-                {
-                    [...this.state.segments].map(([value, position]) => {
-                        return <RulerSegment key={value} value={value} position={position} />
-                    })
-                }
-            </div>
-        )
     }
 }

@@ -1,4 +1,4 @@
-import { ScaleNavigator } from './lib/scale-navigator/component';
+import { ScaleNavigator } from './lib/scale-navigator/control';
 import './lib/scale-navigator/style.sass';
 
 class Main {
